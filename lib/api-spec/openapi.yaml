@@ -3,13 +3,17 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SignalFlow API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: servers
+    description: Server monitoring
+  - name: alerts
+    description: Alert management
 paths:
   /healthz:
     get:
@@ -24,6 +28,77 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /servers:
+    get:
+      operationId: getServers
+      tags: [servers]
+      summary: List all monitored servers
+      description: Returns all servers with their current status
+      responses:
+        "200":
+          description: Server list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Server"
+
+  /servers/{id}/metrics:
+    get:
+      operationId: getServerMetrics
+      tags: [servers]
+      summary: Get historical metrics for a server
+      description: Returns the last N data points of metrics for the given server
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Metrics history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MetricPoint"
+        "404":
+          description: Server not found
+
+  /alerts:
+    get:
+      operationId: getAlerts
+      tags: [alerts]
+      summary: Get recent alerts
+      description: Returns the most recent system alerts
+      responses:
+        "200":
+          description: Alert list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Alert"
+
+  /summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [servers]
+      summary: Get dashboard summary stats
+      description: Returns aggregated counts and health overview for the dashboard
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +109,88 @@ components:
       required:
         - status
 
+    Server:
+      type: object
+      required: [id, name, status, location, uptime, ip]
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        status:
+          type: string
+          enum: [online, warning, offline]
+        location:
+          type: string
+        uptime:
+          type: number
+          description: Uptime percentage (0-100)
+        ip:
+          type: string
+        cpu:
+          type: number
+          description: Current CPU usage (0-100)
+        memory:
+          type: number
+          description: Current memory usage (0-100)
+        requestsPerSec:
+          type: number
+        errorRate:
+          type: number
+
+    MetricPoint:
+      type: object
+      required: [timestamp, cpu, memory, requestsPerSec, errorRate, network]
+      properties:
+        timestamp:
+          type: string
+        cpu:
+          type: number
+        memory:
+          type: number
+        requestsPerSec:
+          type: number
+        errorRate:
+          type: number
+        network:
+          type: number
+
+    Alert:
+      type: object
+      required: [id, serverId, serverName, type, message, severity, timestamp]
+      properties:
+        id:
+          type: string
+        serverId:
+          type: string
+        serverName:
+          type: string
+        type:
+          type: string
+          enum: [cpu, memory, error_rate, server_down, server_up]
+        message:
+          type: string
+        severity:
+          type: string
+          enum: [info, warning, critical]
+        timestamp:
+          type: string
+
+    DashboardSummary:
+      type: object
+      required: [totalServers, onlineServers, warningServers, offlineServers, totalAlerts, avgCpu, avgMemory]
+      properties:
+        totalServers:
+          type: integer
+        onlineServers:
+          type: integer
+        warningServers:
+          type: integer
+        offlineServers:
+          type: integer
+        totalAlerts:
+          type: integer
+        avgCpu:
+          type: number
+        avgMemory:
+          type: number

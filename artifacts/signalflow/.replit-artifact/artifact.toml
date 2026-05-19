@@ -1,0 +1,31 @@
+kind = "web"
+previewPath = "/"
+title = "SignalFlow"
+version = "1.0.0"
+id = "artifacts/signalflow"
+router = "path"
+
+[[integratedSkills]]
+name = "react-vite"
+version = "1.0.0"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 23077
+
+[services.development]
+run = "pnpm --filter @workspace/signalflow run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/signalflow", "run", "build" ]
+publicDir = "artifacts/signalflow/dist/public"
+serve = "static"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "23077"
+BASE_PATH = "/"
